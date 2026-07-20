@@ -90,10 +90,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "Organize seu cronograma, estude pelo edital esquematizado e acompanhe seu desempenho em um só lugar.",
+          "Plataforma completa para preparação em concursos públicos: cronograma, edital esquematizado, banco de questões e acompanhamento de desempenho.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Foco Total — Plataforma de estudos para concursos" },
+      { name: "twitter:description", content: "Plataforma completa para preparação em concursos públicos: cronograma, edital esquematizado, banco de questões e acompanhamento de desempenho." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/873b4447-3f5e-4c26-a1bb-f051a719f090/id-preview-c54b867d--a56e9141-4f8f-45b9-8e1a-bf3726700787.lovable.app-1784568621511.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/873b4447-3f5e-4c26-a1bb-f051a719f090/id-preview-c54b867d--a56e9141-4f8f-45b9-8e1a-bf3726700787.lovable.app-1784568621511.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
