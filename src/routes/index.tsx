@@ -461,29 +461,11 @@ function GoalBar({
   );
 }
 
-const weeklyTime = [
-  { day: "Seg", value: 120 },
-  { day: "Ter", value: 95 },
-  { day: "Qua", value: 180 },
-  { day: "Qui", value: 60 },
-  { day: "Sex", value: 145 },
-  { day: "Sáb", value: 200 },
-  { day: "Dom", value: 0 },
-];
-
-const weeklyQuestions = [
-  { day: "Seg", value: 32 },
-  { day: "Ter", value: 28 },
-  { day: "Qua", value: 45 },
-  { day: "Qui", value: 18 },
-  { day: "Sex", value: 40 },
-  { day: "Sáb", value: 51 },
-  { day: "Dom", value: 0 },
-];
-
 function WeeklyStudyChart() {
   const [tab, setTab] = useState("tempo");
+  const { weeklyTime, weeklyQuestions } = useStudy();
   const data = tab === "tempo" ? weeklyTime : weeklyQuestions;
+
   const total = data.reduce((a, b) => a + b.value, 0);
   const formatValue = (v: number) =>
     tab === "tempo" ? `${Math.floor(v / 60)}h${(v % 60).toString().padStart(2, "0")}` : `${v}`;
@@ -546,16 +528,15 @@ function WeeklyStudyChart() {
   );
 }
 
-const todaySubjects = [
-  { name: "Direito Constitucional", value: 75, color: "oklch(0.78 0.12 155)" },
-  { name: "Direito Administrativo", value: 55, color: "oklch(0.72 0.14 300)" },
-  { name: "Português", value: 40, color: "oklch(0.82 0.11 40)" },
-  { name: "Raciocínio Lógico", value: 30, color: "oklch(0.72 0.12 220)" },
-  { name: "Informática", value: 20, color: "oklch(0.78 0.14 100)" },
-];
+const todaySubjectsFallback: { name: string; value: number; color: string }[] = [];
 
 function TodayStudyPie() {
-  const total = todaySubjects.reduce((a, b) => a + b.value, 0);
+  const { todayBySubject } = useStudy();
+  const subjects = todayBySubject.length > 0 ? todayBySubject : todaySubjectsFallback;
+  const total = subjects.reduce((a, b) => a + b.value, 0);
+  const formatTime = (m: number) =>
+    `${Math.floor(m / 60)}h${(m % 60).toString().padStart(2, "0")}`;
+
   const formatTime = (m: number) =>
     `${Math.floor(m / 60)}h${(m % 60).toString().padStart(2, "0")}`;
 
