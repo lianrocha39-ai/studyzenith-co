@@ -537,8 +537,6 @@ function TodayStudyPie() {
   const formatTime = (m: number) =>
     `${Math.floor(m / 60)}h${(m % 60).toString().padStart(2, "0")}`;
 
-  const formatTime = (m: number) =>
-    `${Math.floor(m / 60)}h${(m % 60).toString().padStart(2, "0")}`;
 
   return (
     <Card className="rounded-2xl border-border/60 shadow-sm">
@@ -553,14 +551,14 @@ function TodayStudyPie() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={todaySubjects}
+                data={subjects}
                 dataKey="value"
                 innerRadius={50}
                 outerRadius={78}
                 paddingAngle={2}
                 stroke="none"
               >
-                {todaySubjects.map((entry, i) => (
+                {subjects.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
@@ -583,7 +581,7 @@ function TodayStudyPie() {
           </div>
         </div>
         <ul className="mt-4 space-y-2">
-          {todaySubjects.map((s) => (
+          {subjects.map((s) => (
             <li key={s.name} className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-2">
                 <span
