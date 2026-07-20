@@ -217,6 +217,18 @@ function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Target exam + weekly goals */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              <TargetExamCard />
+              <WeeklyGoalsCard />
+            </div>
+
+            {/* Weekly chart + Pie */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              <WeeklyStudyChart />
+              <TodayStudyPie />
+            </div>
           </main>
         </SidebarInset>
       </div>
