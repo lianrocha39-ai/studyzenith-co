@@ -361,13 +361,16 @@ function TargetExamCard() {
 }
 
 function WeeklyGoalsCard() {
-  const hoursDone = 9 * 60 + 46;
+  const { totals } = useStudy();
+  const hoursDone = totals.weekMinutes;
   const hoursGoal = 20 * 60;
-  const hoursPct = Math.round((hoursDone / hoursGoal) * 100);
+  const hoursPct = Math.min(100, Math.round((hoursDone / hoursGoal) * 100));
+  const hoursText = `${Math.floor(hoursDone / 60)}h${(hoursDone % 60).toString().padStart(2, "0")}min`;
 
-  const questionsDone = 214;
+  const questionsDone = totals.weekQuestions;
   const questionsGoal = 120;
   const questionsPct = Math.min(100, Math.round((questionsDone / questionsGoal) * 100));
+
 
   return (
     <Card className="rounded-2xl border-border/60 shadow-sm lg:col-span-2">
@@ -386,10 +389,11 @@ function WeeklyGoalsCard() {
         <GoalBar
           icon={<Timer className="h-4 w-4" />}
           label="Horas de estudo"
-          currentText="9h46min"
+          currentText={hoursText}
           goalText="20h00min"
           pct={hoursPct}
           barClass="bg-primary"
+
           tone="bg-mint text-mint-foreground"
         />
         <GoalBar
