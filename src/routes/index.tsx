@@ -62,6 +62,10 @@ const weekDays = [
 
 function Dashboard() {
   const [plan, setPlan] = useState("concursos");
+  const { completedTopics } = useStudy();
+  const progressPct = Math.round((completedTopics / TOTAL_TOPICS) * 100);
+  const pending = TOTAL_TOPICS - completedTopics;
+
 
   return (
     <SidebarProvider>
@@ -110,11 +114,9 @@ function Dashboard() {
                   <Flame className="mr-1 h-3 w-3" /> 12 dias em sequência
                 </Badge>
               </div>
-              <Button size="lg" className="h-11 rounded-xl shadow-sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar estudo
-              </Button>
+              <AddStudyDialog />
             </div>
+
 
             {/* Top grid */}
             <div className="grid gap-6 lg:grid-cols-3">
@@ -136,22 +138,26 @@ function Dashboard() {
                 <CardContent className="space-y-6">
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-5xl font-bold tracking-tight">14%</p>
+                      <p className="text-5xl font-bold tracking-tight tabular-nums">
+                        {progressPct}%
+                      </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         do edital concluído
                       </p>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                      <p>28 de 200 tópicos</p>
+                      <p className="tabular-nums">
+                        {completedTopics} de {TOTAL_TOPICS} tópicos
+                      </p>
                       <p className="mt-1">Meta: 40% até nov/25</p>
                     </div>
                   </div>
-                  <Progress value={14} className="h-2.5 rounded-full" />
+                  <Progress value={progressPct} className="h-2.5 rounded-full transition-all" />
                   <div className="grid grid-cols-3 gap-3">
                     <StatBlock
                       icon={<Check className="h-4 w-4" />}
                       label="Concluídos"
-                      value="28"
+                      value={String(completedTopics)}
                       tone="mint"
                     />
                     <StatBlock
@@ -163,11 +169,12 @@ function Dashboard() {
                     <StatBlock
                       icon={<BookOpen className="h-4 w-4" />}
                       label="Pendentes"
-                      value="160"
+                      value={String(pending)}
                       tone="peach"
                     />
                   </div>
                 </CardContent>
+
               </Card>
 
               {/* Motivation card */}
