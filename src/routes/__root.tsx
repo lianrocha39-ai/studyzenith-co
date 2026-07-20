@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { StudyProvider } from "../lib/study-store";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -129,7 +131,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <StudyProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </StudyProvider>
     </QueryClientProvider>
   );
 }

@@ -30,12 +30,13 @@ import {
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AddStudyDialog } from "@/components/add-study-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -43,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TOTAL_TOPICS, useStudy } from "@/lib/study-store";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -60,6 +62,10 @@ const weekDays = [
 
 function Dashboard() {
   const [plan, setPlan] = useState("concursos");
+  const { completedTopics } = useStudy();
+  const progressPct = Math.round((completedTopics / TOTAL_TOPICS) * 100);
+  const pending = TOTAL_TOPICS - completedTopics;
+
 
   return (
     <SidebarProvider>
@@ -108,11 +114,9 @@ function Dashboard() {
                   <Flame className="mr-1 h-3 w-3" /> 12 dias em sequência
                 </Badge>
               </div>
-              <Button size="lg" className="h-11 rounded-xl shadow-sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar estudo
-              </Button>
+              <AddStudyDialog />
             </div>
+
 
             {/* Top grid */}
             <div className="grid gap-6 lg:grid-cols-3">
@@ -134,22 +138,26 @@ function Dashboard() {
                 <CardContent className="space-y-6">
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-5xl font-bold tracking-tight">14%</p>
+                      <p className="text-5xl font-bold tracking-tight tabular-nums">
+                        {progressPct}%
+                      </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         do edital concluído
                       </p>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                      <p>28 de 200 tópicos</p>
+                      <p className="tabular-nums">
+                        {completedTopics} de {TOTAL_TOPICS} tópicos
+                      </p>
                       <p className="mt-1">Meta: 40% até nov/25</p>
                     </div>
                   </div>
-                  <Progress value={14} className="h-2.5 rounded-full" />
+                  <Progress value={progressPct} className="h-2.5 rounded-full transition-all" />
                   <div className="grid grid-cols-3 gap-3">
                     <StatBlock
                       icon={<Check className="h-4 w-4" />}
                       label="Concluídos"
-                      value="28"
+                      value={String(completedTopics)}
                       tone="mint"
                     />
                     <StatBlock
@@ -161,11 +169,12 @@ function Dashboard() {
                     <StatBlock
                       icon={<BookOpen className="h-4 w-4" />}
                       label="Pendentes"
-                      value="160"
+                      value={String(pending)}
                       tone="peach"
                     />
                   </div>
                 </CardContent>
+
               </Card>
 
               {/* Motivation card */}
@@ -352,13 +361,16 @@ function TargetExamCard() {
 }
 
 function WeeklyGoalsCard() {
-  const hoursDone = 9 * 60 + 46;
+  const { totals } = useStudy();
+  const hoursDone = totals.weekMinutes;
   const hoursGoal = 20 * 60;
-  const hoursPct = Math.round((hoursDone / hoursGoal) * 100);
+  const hoursPct = Math.min(100, Math.round((hoursDone / hoursGoal) * 100));
+  const hoursText = `${Math.floor(hoursDone / 60)}h${(hoursDone % 60).toString().padStart(2, "0")}min`;
 
-  const questionsDone = 214;
+  const questionsDone = totals.weekQuestions;
   const questionsGoal = 120;
   const questionsPct = Math.min(100, Math.round((questionsDone / questionsGoal) * 100));
+
 
   return (
     <Card className="rounded-2xl border-border/60 shadow-sm lg:col-span-2">
@@ -377,10 +389,11 @@ function WeeklyGoalsCard() {
         <GoalBar
           icon={<Timer className="h-4 w-4" />}
           label="Horas de estudo"
-          currentText="9h46min"
+          currentText={hoursText}
           goalText="20h00min"
           pct={hoursPct}
           barClass="bg-primary"
+
           tone="bg-mint text-mint-foreground"
         />
         <GoalBar
@@ -448,29 +461,11 @@ function GoalBar({
   );
 }
 
-const weeklyTime = [
-  { day: "Seg", value: 120 },
-  { day: "Ter", value: 95 },
-  { day: "Qua", value: 180 },
-  { day: "Qui", value: 60 },
-  { day: "Sex", value: 145 },
-  { day: "Sáb", value: 200 },
-  { day: "Dom", value: 0 },
-];
-
-const weeklyQuestions = [
-  { day: "Seg", value: 32 },
-  { day: "Ter", value: 28 },
-  { day: "Qua", value: 45 },
-  { day: "Qui", value: 18 },
-  { day: "Sex", value: 40 },
-  { day: "Sáb", value: 51 },
-  { day: "Dom", value: 0 },
-];
-
 function WeeklyStudyChart() {
   const [tab, setTab] = useState("tempo");
+  const { weeklyTime, weeklyQuestions } = useStudy();
   const data = tab === "tempo" ? weeklyTime : weeklyQuestions;
+
   const total = data.reduce((a, b) => a + b.value, 0);
   const formatValue = (v: number) =>
     tab === "tempo" ? `${Math.floor(v / 60)}h${(v % 60).toString().padStart(2, "0")}` : `${v}`;
@@ -533,18 +528,15 @@ function WeeklyStudyChart() {
   );
 }
 
-const todaySubjects = [
-  { name: "Direito Constitucional", value: 75, color: "oklch(0.78 0.12 155)" },
-  { name: "Direito Administrativo", value: 55, color: "oklch(0.72 0.14 300)" },
-  { name: "Português", value: 40, color: "oklch(0.82 0.11 40)" },
-  { name: "Raciocínio Lógico", value: 30, color: "oklch(0.72 0.12 220)" },
-  { name: "Informática", value: 20, color: "oklch(0.78 0.14 100)" },
-];
+const todaySubjectsFallback: { name: string; value: number; color: string }[] = [];
 
 function TodayStudyPie() {
-  const total = todaySubjects.reduce((a, b) => a + b.value, 0);
+  const { todayBySubject } = useStudy();
+  const subjects = todayBySubject.length > 0 ? todayBySubject : todaySubjectsFallback;
+  const total = subjects.reduce((a, b) => a + b.value, 0);
   const formatTime = (m: number) =>
     `${Math.floor(m / 60)}h${(m % 60).toString().padStart(2, "0")}`;
+
 
   return (
     <Card className="rounded-2xl border-border/60 shadow-sm">
@@ -559,14 +551,14 @@ function TodayStudyPie() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={todaySubjects}
+                data={subjects}
                 dataKey="value"
                 innerRadius={50}
                 outerRadius={78}
                 paddingAngle={2}
                 stroke="none"
               >
-                {todaySubjects.map((entry, i) => (
+                {subjects.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
@@ -589,7 +581,7 @@ function TodayStudyPie() {
           </div>
         </div>
         <ul className="mt-4 space-y-2">
-          {todaySubjects.map((s) => (
+          {subjects.map((s) => (
             <li key={s.name} className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-2">
                 <span
