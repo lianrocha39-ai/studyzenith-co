@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as EditalRouteImport } from './routes/edital'
 import { Route as CronogramaRouteImport } from './routes/cronograma'
 import { Route as IndexRouteImport } from './routes/index'
 
+const EditalRoute = EditalRouteImport.update({
+  id: '/edital',
+  path: '/edital',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CronogramaRoute = CronogramaRouteImport.update({
   id: '/cronograma',
   path: '/cronograma',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cronograma': typeof CronogramaRoute
+  '/edital': typeof EditalRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cronograma': typeof CronogramaRoute
+  '/edital': typeof EditalRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cronograma': typeof CronogramaRoute
+  '/edital': typeof EditalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cronograma'
+  fullPaths: '/' | '/cronograma' | '/edital'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cronograma'
-  id: '__root__' | '/' | '/cronograma'
+  to: '/' | '/cronograma' | '/edital'
+  id: '__root__' | '/' | '/cronograma' | '/edital'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CronogramaRoute: typeof CronogramaRoute
+  EditalRoute: typeof EditalRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/edital': {
+      id: '/edital'
+      path: '/edital'
+      fullPath: '/edital'
+      preLoaderRoute: typeof EditalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cronograma': {
       id: '/cronograma'
       path: '/cronograma'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CronogramaRoute: CronogramaRoute,
+  EditalRoute: EditalRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
