@@ -67,6 +67,8 @@ const StudyCtx = createContext<Ctx | null>(null);
 export function StudyProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<StudySession[]>(seedSessions);
   const [extraCompleted, setExtraCompleted] = useState(0);
+  const [subjectsIncidence, setSubjectsIncidence] = useState<SubjectIncidence[]>([]);
+  const [editalTopics, setEditalTopics] = useState<EditalTopic[]>([]);
 
   const value = useMemo<Ctx>(() => {
     const todayIdx = getTodayIndex();
@@ -116,8 +118,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       weeklyQuestions,
       todayBySubject,
       totals: { weekMinutes, weekQuestions, todayMinutes },
+      subjectsIncidence,
+      setSubjectsIncidence,
+      editalTopics,
+      setEditalTopics,
     };
-  }, [sessions, extraCompleted]);
+  }, [sessions, extraCompleted, subjectsIncidence, editalTopics]);
 
   return <StudyCtx.Provider value={value}>{children}</StudyCtx.Provider>;
 }
