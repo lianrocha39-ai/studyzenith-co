@@ -41,6 +41,9 @@ const seedSessions: StudySession[] = [
   { id: "s6", subject: "Direito Constitucional", topic: "Controle de constitucionalidade", minutes: 200, correct: 35, wrong: 16, markedComplete: false, createdAt: new Date(), dayIndex: 5 },
 ];
 
+export type SubjectIncidence = { name: string; incidence: number }; // 1..5
+export type EditalTopic = { id: string; subject: string; topic: string };
+
 type Ctx = {
   sessions: StudySession[];
   completedTopics: number;
@@ -53,6 +56,10 @@ type Ctx = {
     weekQuestions: number;
     todayMinutes: number;
   };
+  subjectsIncidence: SubjectIncidence[];
+  setSubjectsIncidence: (s: SubjectIncidence[]) => void;
+  editalTopics: EditalTopic[];
+  setEditalTopics: (t: EditalTopic[]) => void;
 };
 
 const StudyCtx = createContext<Ctx | null>(null);
