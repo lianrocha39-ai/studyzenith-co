@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useStudy } from "@/lib/study-store";
 import { useAuth } from "@/lib/auth-context";
 import { parseEditalFile } from "@/lib/study-parsers";
+import { extractTextFromPdf, parseEditalTopicsFromText } from "@/lib/pdf-parser";
 
 export const Route = createFileRoute("/edital")({
   component: EditalPage,
@@ -39,6 +40,7 @@ function EditalPage() {
   const { editalTopics, setEditalTopics, sessions } = useStudy();
   const fileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [isReadingPdf, setIsReadingPdf] = useState(false);
 
   if (loading || !user) {
     return (
@@ -78,36 +80,68 @@ function EditalPage() {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   const onFile = async (f: File) => {
-    const text = await f.text();
-    const parsed = parseEditalFile(text);
-    if (parsed.length === 0) {
-      toast.error("Não encontrei tópicos no arquivo.");
-      return;
+    try {
+      if (f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf") {
+        setIsReadingPdf(true);
+        toast.info("Lendo edital em PDF...");
+        const pdfText = await extractTextFromPdf(f);
+        const parsed = parseEditalTopicsFromText(pdfText);
+        setIsReadingPdf(false);
+
+        if (parsed.length === 0) {
+          toast.error("Não encontrei tópicos no edital em PDF.");
+          return;
+        }
+        setEditalTopics(parsed);
+        toast.success(`${parsed.length} tópicos extraídos do edital em PDF!`);
+        return;
+      }
+
+      const text = await f.text();
+      const parsed = parseEditalFile(text);
+      if (parsed.length === 0) {
+        toast.error("Não encontrei tópicos no arquivo.");
+        return;
+      }
+      setEditalTopics(parsed);
+      toast.success(`${parsed.length} tópicos carregados.`);
+    } catch (err) {
+      setIsReadingPdf(false);
+      console.error(err);
+      toast.error("Erro ao ler edital.");
     }
-    setEditalTopics(parsed);
-    toast.success(`${parsed.length} tópicos carregados.`);
   };
 
   return (
     <PageShell
       title="Edital esquematizado"
-      description="Envie seu edital e acompanhe visualmente o que já foi estudado"
+      description="Envie seu edital em PDF ou TXT e acompanhe visualmente o que já foi estudado"
     >
       <Card className="rounded-2xl border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <FileText className="h-4 w-4" /> Arquivo do edital
+            <FileText className="h-4 w-4" /> Edital em PDF ou Arquivo de texto
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Envie um TXT/JSON com o edital. Cabeçalhos terminados em <code className="rounded bg-muted px-1">:</code>{" "}
-            viram matérias; cada linha ou item vira um tópico.
+          <p className="text-sm text-muted-foreground">
+            Envie o <strong>edital oficial em PDF (.pdf)</strong> ou arquivo TXT/JSON. O sistema esquematizará os tópicos por matéria automaticamente!
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <input
               ref={fileRef}
               type="file"
+              accept=".pdf,.txt,.json,.csv,application/pdf,text/plain,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onFile(f);
+                e.target.value = "";
+              }}
+            />
+            <Button onClick={() => fileRef.current?.click()} className="rounded-xl" disabled={isReadingPdf}>
+              <Upload className="mr-2 h-4 w-4" /> {isReadingPdf ? "Lendo PDF..." : "Escolher arquivo (PDF, TXT)"}
+            </Button>
               accept=".txt,.json,.md,text/plain"
               className="hidden"
               onChange={(e) => {

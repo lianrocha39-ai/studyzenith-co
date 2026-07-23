@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useStudy } from "@/lib/study-store";
 import { useAuth } from "@/lib/auth-context";
 import { parseSubjectsFile, buildSchedule } from "@/lib/study-parsers";
+import { extractTextFromPdf, parseSubjectsFromText } from "@/lib/pdf-parser";
 
 export const Route = createFileRoute("/cronograma")({
   component: CronogramaPage,
@@ -38,6 +39,7 @@ function CronogramaPage() {
   const [endDate, setEndDate] = useState("2026-11-01");
   const [hoursPerDay, setHoursPerDay] = useState("4");
   const [subjectsPerDay, setSubjectsPerDay] = useState("2");
+  const [isReadingPdf, setIsReadingPdf] = useState(false);
 
   if (loading || !user) {
     return (
@@ -61,14 +63,36 @@ function CronogramaPage() {
   }, [subjectsIncidence, startDate, endDate, hoursPerDay, subjectsPerDay]);
 
   const onFile = async (f: File) => {
-    const text = await f.text();
-    const parsed = parseSubjectsFile(text);
-    if (parsed.length === 0) {
-      toast.error("Nenhuma matéria encontrada no arquivo.");
-      return;
+    try {
+      if (f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf") {
+        setIsReadingPdf(true);
+        toast.info("Processando e lendo o edital em PDF...");
+        const pdfText = await extractTextFromPdf(f);
+        const parsed = parseSubjectsFromText(pdfText);
+        setIsReadingPdf(false);
+
+        if (parsed.length === 0) {
+          toast.error("Nenhuma matéria identificada no PDF.");
+          return;
+        }
+        setSubjectsIncidence(parsed);
+        toast.success(`${parsed.length} matérias extraídas com sucesso do edital em PDF!`);
+        return;
+      }
+
+      const text = await f.text();
+      const parsed = parseSubjectsFile(text);
+      if (parsed.length === 0) {
+        toast.error("Nenhuma matéria encontrada no arquivo.");
+        return;
+      }
+      setSubjectsIncidence(parsed);
+      toast.success(`${parsed.length} matérias carregadas.`);
+    } catch (err) {
+      setIsReadingPdf(false);
+      console.error(err);
+      toast.error("Erro ao ler arquivo de edital.");
     }
-    setSubjectsIncidence(parsed);
-    toast.success(`${parsed.length} matérias carregadas.`);
   };
 
   const incColor = (n: number) =>
@@ -81,27 +105,28 @@ function CronogramaPage() {
           : "bg-peach text-foreground";
 
   const incLabel = (n: number) =>
-    n >= 5 ? "Muito alta" : n === 4 ? "Alta" : n === 3 ? "Média" : n === 2 ? "Baixa" : "Muito baixa";
+    n >= 5 ? "Alta" : n === 4 ? "Média-Alta" : n === 3 ? "Média" : "Baixa";
 
   return (
-    <PageShell title="Cronograma" description="Monte seu plano de estudos a partir do arquivo de matérias">
+    <PageShell
+      title="Cronograma"
+      description="Monte seu plano de estudos enviando seu edital em PDF ou arquivo de matérias"
+    >
       <Card className="rounded-2xl border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <FileText className="h-4 w-4" /> Arquivo de matérias
+            <FileText className="h-4 w-4" /> Edital em PDF ou Arquivo de matérias
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Envie CSV, TXT ou JSON com matérias e nível de incidência. Ex:{" "}
-            <code className="rounded bg-muted px-1">Direito Constitucional, Alta</code> ou{" "}
-            <code className="rounded bg-muted px-1">Português - 4</code>.
+          <p className="text-sm text-muted-foreground">
+            Envie o seu <strong>edital em PDF (.pdf)</strong> ou arquivo TXT, CSV/JSON com as matérias e incidências. O sistema lerá as disciplinas automaticamente!
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.txt,.json,.tsv,text/plain,application/json"
+              accept=".pdf,.csv,.txt,.json,.tsv,application/pdf,text/plain,application/json"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -109,8 +134,8 @@ function CronogramaPage() {
                 e.target.value = "";
               }}
             />
-            <Button onClick={() => fileRef.current?.click()} className="rounded-xl">
-              <Upload className="mr-2 h-4 w-4" /> Escolher arquivo
+            <Button onClick={() => fileRef.current?.click()} className="rounded-xl" disabled={isReadingPdf}>
+              <Upload className="mr-2 h-4 w-4" /> {isReadingPdf ? "Lendo PDF..." : "Escolher arquivo (PDF, TXT, CSV)"}
             </Button>
             {subjectsIncidence.length > 0 && (
               <Badge variant="secondary" className="rounded-full">
