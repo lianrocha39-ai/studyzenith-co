@@ -3,11 +3,9 @@ import { useMemo, useState } from "react";
 import {
   Bell,
   Plus,
-  ChevronDown,
   Check,
   BookOpen,
   Target,
-  Sparkles,
   Clock,
   Flame,
   CalendarClock,
@@ -122,7 +120,7 @@ function Dashboard() {
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Progress card */}
               <Card className="lg:col-span-2 rounded-2xl border-border/60 shadow-sm">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
                   <div>
                     <CardTitle className="text-base font-semibold">
                       Progresso geral no edital
@@ -135,13 +133,13 @@ function Dashboard() {
                     Em andamento
                   </Badge>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-5">
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-5xl font-bold tracking-tight tabular-nums">
+                      <p className="text-4xl font-bold tracking-tight tabular-nums">
                         {progressPct}%
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         do edital concluído
                       </p>
                     </div>
@@ -149,77 +147,51 @@ function Dashboard() {
                       <p className="tabular-nums">
                         {completedTopics} de {TOTAL_TOPICS} tópicos
                       </p>
-                      <p className="mt-1">Meta: 40% até nov/25</p>
+                      <p className="mt-0.5">Meta: 40% até nov/25</p>
                     </div>
                   </div>
-                  <Progress value={progressPct} className="h-2.5 rounded-full transition-all" />
+                  <Progress value={progressPct} className="h-2 rounded-full transition-all" />
                   <div className="grid grid-cols-3 gap-3">
                     <StatBlock
-                      icon={<Check className="h-4 w-4" />}
+                      icon={<Check className="h-3.5 w-3.5" />}
                       label="Concluídos"
                       value={String(completedTopics)}
                       tone="mint"
                     />
                     <StatBlock
-                      icon={<Clock className="h-4 w-4" />}
+                      icon={<Clock className="h-3.5 w-3.5" />}
                       label="Em revisão"
                       value="12"
                       tone="lavender"
                     />
                     <StatBlock
-                      icon={<BookOpen className="h-4 w-4" />}
+                      icon={<BookOpen className="h-3.5 w-3.5" />}
                       label="Pendentes"
                       value={String(pending)}
                       tone="peach"
                     />
                   </div>
                 </CardContent>
-
               </Card>
 
-              {/* Motivation card */}
-              <Card className="rounded-2xl border-border/60 bg-mint text-mint-foreground shadow-sm">
-                <CardContent className="flex h-full flex-col justify-between gap-6 p-6">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/40 backdrop-blur">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wider opacity-70">
-                      Frase do dia
-                    </p>
-                    <p className="mt-2 text-lg font-semibold leading-snug">
-                      "Disciplina é escolher entre o que você quer agora e o que você quer mais."
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-fit rounded-full bg-white/40 text-mint-foreground hover:bg-white/60"
-                  >
-                    Personalizar
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </CardContent>
-              </Card>
+              {/* Target Exam Card */}
+              <TargetExamCard />
             </div>
 
             {/* Week calendar */}
             <Card className="rounded-2xl border-border/60 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3.5 px-5">
                 <div>
-                  <CardTitle className="text-base font-semibold">
+                  <CardTitle className="text-sm font-semibold">
                     Sua semana de estudos
                   </CardTitle>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Marque os dias em que cumpriu a meta
-                  </p>
                 </div>
-                <Badge variant="outline" className="rounded-full">
+                <Badge variant="outline" className="rounded-full text-xs font-normal">
                   <Target className="mr-1 h-3 w-3" /> 3 / 7 dias
                 </Badge>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-7 gap-2 sm:gap-3">
+              <CardContent className="pt-0 pb-4 px-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
                   {weekDays.map((d) => (
                     <DayCell key={d.label} {...d} />
                   ))}
@@ -227,11 +199,8 @@ function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Target exam + weekly goals */}
-            <div className="grid gap-6 lg:grid-cols-3">
-              <TargetExamCard />
-              <WeeklyGoalsCard />
-            </div>
+            {/* Weekly goals */}
+            <WeeklyGoalsCard />
 
             {/* Weekly chart + Pie */}
             <div className="grid gap-6 lg:grid-cols-3">
@@ -262,11 +231,11 @@ function StatBlock({
     peach: "bg-peach text-foreground",
   };
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-4">
-      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${toneMap[tone]}`}>
+    <div className="rounded-xl border border-border/60 bg-card p-3">
+      <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${toneMap[tone]}`}>
         {icon}
       </div>
-      <p className="mt-3 text-2xl font-bold">{value}</p>
+      <p className="mt-2 text-xl font-bold">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
@@ -285,24 +254,26 @@ function DayCell({
 }) {
   return (
     <button
-      className={`group flex flex-col items-center gap-2 rounded-2xl border p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm ${
+      className={`group flex items-center justify-between rounded-xl border px-3 py-2 text-xs transition-all hover:shadow-xs ${
         done
-          ? "border-transparent bg-primary text-primary-foreground"
+          ? "border-transparent bg-primary text-primary-foreground font-medium"
           : today
-            ? "border-primary/60 bg-card ring-2 ring-primary/20"
-            : "border-border/60 bg-card"
+            ? "border-primary/60 bg-card ring-2 ring-primary/20 font-medium"
+            : "border-border/60 bg-card/60 text-muted-foreground"
       }`}
     >
-      <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">
-        {label}
-      </span>
-      <span className="text-lg font-bold">{date}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-wider opacity-80">
+          {label}
+        </span>
+        <span className="text-xs font-semibold tabular-nums">{date}</span>
+      </div>
       <span
-        className={`flex h-6 w-6 items-center justify-center rounded-full ${
-          done ? "bg-white/30" : "bg-muted"
+        className={`flex h-4 w-4 items-center justify-center rounded-full ${
+          done ? "bg-white/30" : "bg-muted/80"
         }`}
       >
-        {done ? <Check className="h-3.5 w-3.5" /> : null}
+        {done ? <Check className="h-2.5 w-2.5" /> : null}
       </span>
     </button>
   );
