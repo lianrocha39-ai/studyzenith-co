@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Settings,
   GraduationCap,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,6 +21,8 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -33,6 +36,10 @@ const items = [
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (p: string) => currentPath === p;
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "Estudante";
 
   return (
     <Sidebar collapsible="icon">
@@ -66,11 +73,20 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="gap-2 p-3">
         <div className="rounded-xl bg-mint p-3 text-mint-foreground group-data-[collapsible=icon]:hidden">
-          <p className="text-xs font-medium">Meta da semana</p>
-          <p className="mt-1 text-lg font-semibold">18h / 25h</p>
+          <p className="text-xs font-medium">Usuário Conectado</p>
+          <p className="mt-1 truncate text-sm font-semibold">{userName}</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-xs gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          onClick={() => signOut().then(() => navigate({ to: "/login" }))}
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="group-data-[collapsible=icon]:hidden">Sair da conta</span>
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

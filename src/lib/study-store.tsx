@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useAuth } from "./auth-context";
 
 export type StudySession = {
   id: string;
@@ -22,7 +23,6 @@ export const SUBJECTS = [
 ];
 
 export const TOTAL_TOPICS = 200;
-const INITIAL_COMPLETED = 28;
 
 const WEEK_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
@@ -32,17 +32,15 @@ export function getTodayIndex() {
   return (d + 6) % 7;
 }
 
-const seedSessions: StudySession[] = [
-  { id: "s1", subject: "Direito Constitucional", topic: "Princípios fundamentais", minutes: 120, correct: 20, wrong: 12, markedComplete: true, createdAt: new Date(), dayIndex: 0 },
-  { id: "s2", subject: "Direito Administrativo", topic: "Atos administrativos", minutes: 95, correct: 18, wrong: 10, markedComplete: true, createdAt: new Date(), dayIndex: 1 },
-  { id: "s3", subject: "Língua Portuguesa", topic: "Concordância verbal", minutes: 180, correct: 30, wrong: 15, markedComplete: false, createdAt: new Date(), dayIndex: 2 },
-  { id: "s4", subject: "Raciocínio Lógico", topic: "Proposições", minutes: 60, correct: 12, wrong: 6, markedComplete: false, createdAt: new Date(), dayIndex: 3 },
-  { id: "s5", subject: "Informática", topic: "Redes", minutes: 145, correct: 25, wrong: 15, markedComplete: true, createdAt: new Date(), dayIndex: 4 },
-  { id: "s6", subject: "Direito Constitucional", topic: "Controle de constitucionalidade", minutes: 200, correct: 35, wrong: 16, markedComplete: false, createdAt: new Date(), dayIndex: 5 },
-];
-
 export type SubjectIncidence = { name: string; incidence: number }; // 1..5
 export type EditalTopic = { id: string; subject: string; topic: string };
+
+type UserStudyData = {
+  sessions: StudySession[];
+  completedTopics: number;
+  subjectsIncidence: SubjectIncidence[];
+  editalTopics: EditalTopic[];
+};
 
 type Ctx = {
   sessions: StudySession[];
@@ -65,10 +63,64 @@ type Ctx = {
 const StudyCtx = createContext<Ctx | null>(null);
 
 export function StudyProvider({ children }: { children: ReactNode }) {
-  const [sessions, setSessions] = useState<StudySession[]>(seedSessions);
-  const [extraCompleted, setExtraCompleted] = useState(0);
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [completedTopics, setCompletedTopics] = useState<number>(0);
   const [subjectsIncidence, setSubjectsIncidence] = useState<SubjectIncidence[]>([]);
   const [editalTopics, setEditalTopics] = useState<EditalTopic[]>([]);
+
+  // Load user-specific study data whenever userId changes
+  useEffect(() => {
+    if (!userId) {
+      setSessions([]);
+      setCompletedTopics(0);
+      setSubjectsIncidence([]);
+      setEditalTopics([]);
+      return;
+    }
+
+    const storageKey = `study_store_${userId}`;
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw) as UserStudyData;
+        setSessions(data.sessions || []);
+        setCompletedTopics(data.completedTopics || 0);
+        setSubjectsIncidence(data.subjectsIncidence || []);
+        setEditalTopics(data.editalTopics || []);
+      } catch (e) {
+        console.error("Erro ao carregar dados de estudo do usuário", e);
+        setSessions([]);
+        setCompletedTopics(0);
+      }
+    } else {
+      // New User: 100% zerado
+      setSessions([]);
+      setCompletedTopics(0);
+      setSubjectsIncidence([]);
+      setEditalTopics([]);
+    }
+  }, [userId]);
+
+  // Persist study data when updated
+  const saveUserData = (
+    newSessions: StudySession[],
+    newCompleted: number,
+    newIncidence: SubjectIncidence[],
+    newEdital: EditalTopic[]
+  ) => {
+    if (!userId) return;
+    const storageKey = `study_store_${userId}`;
+    const payload: UserStudyData = {
+      sessions: newSessions,
+      completedTopics: newCompleted,
+      subjectsIncidence: newIncidence,
+      editalTopics: newEdital,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+  };
 
   const value = useMemo<Ctx>(() => {
     const todayIdx = getTodayIndex();
@@ -101,29 +153,38 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     return {
       sessions,
-      completedTopics: INITIAL_COMPLETED + extraCompleted,
+      completedTopics,
       addSession: (s) => {
-        setSessions((prev) => [
-          ...prev,
-          {
-            ...s,
-            id: crypto.randomUUID(),
-            createdAt: new Date(),
-            dayIndex: getTodayIndex(),
-          },
-        ]);
-        if (s.markedComplete) setExtraCompleted((c) => c + 1);
+        const newSession: StudySession = {
+          ...s,
+          id: crypto.randomUUID(),
+          createdAt: new Date(),
+          dayIndex: getTodayIndex(),
+        };
+        const updatedSessions = [...sessions, newSession];
+        const updatedCompleted = s.markedComplete ? completedTopics + 1 : completedTopics;
+
+        setSessions(updatedSessions);
+        if (s.markedComplete) setCompletedTopics(updatedCompleted);
+
+        saveUserData(updatedSessions, updatedCompleted, subjectsIncidence, editalTopics);
       },
       weeklyTime,
       weeklyQuestions,
       todayBySubject,
       totals: { weekMinutes, weekQuestions, todayMinutes },
       subjectsIncidence,
-      setSubjectsIncidence,
+      setSubjectsIncidence: (inc) => {
+        setSubjectsIncidence(inc);
+        saveUserData(sessions, completedTopics, inc, editalTopics);
+      },
       editalTopics,
-      setEditalTopics,
+      setEditalTopics: (t) => {
+        setEditalTopics(t);
+        saveUserData(sessions, completedTopics, subjectsIncidence, t);
+      },
     };
-  }, [sessions, extraCompleted, subjectsIncidence, editalTopics]);
+  }, [sessions, completedTopics, subjectsIncidence, editalTopics, userId]);
 
   return <StudyCtx.Provider value={value}>{children}</StudyCtx.Provider>;
 }

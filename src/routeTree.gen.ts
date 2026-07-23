@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as EditalRouteImport } from './routes/edital'
 import { Route as CronogramaRouteImport } from './routes/cronograma'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 
 const EditalRoute = EditalRouteImport.update({
@@ -23,6 +24,11 @@ const CronogramaRoute = CronogramaRouteImport.update({
   path: '/cronograma',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/cronograma': typeof CronogramaRoute
   '/edital': typeof EditalRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/cronograma': typeof CronogramaRoute
   '/edital': typeof EditalRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/cronograma': typeof CronogramaRoute
   '/edital': typeof EditalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cronograma' | '/edital'
+  fullPaths: '/' | '/login' | '/cronograma' | '/edital'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cronograma' | '/edital'
-  id: '__root__' | '/' | '/cronograma' | '/edital'
+  to: '/' | '/login' | '/cronograma' | '/edital'
+  id: '__root__' | '/' | '/login' | '/cronograma' | '/edital'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   CronogramaRoute: typeof CronogramaRoute
   EditalRoute: typeof EditalRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CronogramaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   CronogramaRoute: CronogramaRoute,
   EditalRoute: EditalRoute,
 }

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Upload, FileText, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/page-shell";
@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useStudy } from "@/lib/study-store";
+import { useAuth } from "@/lib/auth-context";
 import { parseEditalFile } from "@/lib/study-parsers";
 
 export const Route = createFileRoute("/edital")({
@@ -26,9 +27,29 @@ function normalize(s: string) {
 }
 
 function EditalPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [user, loading, navigate]);
+
   const { editalTopics, setEditalTopics, sessions } = useStudy();
   const fileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   const studiedTokens = useMemo(
     () => sessions.map((s) => normalize(s.topic)).filter(Boolean),

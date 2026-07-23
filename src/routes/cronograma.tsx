@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Upload, FileText, Sparkles, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/page-shell";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useStudy } from "@/lib/study-store";
+import { useAuth } from "@/lib/auth-context";
 import { parseSubjectsFile, buildSchedule } from "@/lib/study-parsers";
 
 export const Route = createFileRoute("/cronograma")({
@@ -22,12 +23,32 @@ function todayISO() {
 }
 
 function CronogramaPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [user, loading, navigate]);
+
   const { subjectsIncidence, setSubjectsIncidence } = useStudy();
   const fileRef = useRef<HTMLInputElement>(null);
   const [startDate, setStartDate] = useState(todayISO());
   const [endDate, setEndDate] = useState("2026-11-01");
   const [hoursPerDay, setHoursPerDay] = useState("4");
   const [subjectsPerDay, setSubjectsPerDay] = useState("2");
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   const schedule = useMemo(() => {
     if (subjectsIncidence.length === 0) return [];

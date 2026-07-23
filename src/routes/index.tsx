@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Plus,
@@ -12,6 +12,7 @@ import {
   Trophy,
   Timer,
   ListChecks,
+  LogOut,
 } from "lucide-react";
 import {
   Bar,
@@ -43,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TOTAL_TOPICS, useStudy } from "@/lib/study-store";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -59,11 +61,37 @@ const weekDays = [
 ];
 
 function Dashboard() {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [plan, setPlan] = useState("concursos");
   const { completedTopics } = useStudy();
   const progressPct = Math.round((completedTopics / TOTAL_TOPICS) * 100);
   const pending = TOTAL_TOPICS - completedTopics;
 
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate({ to: "/login" });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const userName = user.user_metadata?.name || user.email?.split("@")[0] || "Estudante";
+  const userInitials = userName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <SidebarProvider>
@@ -75,7 +103,7 @@ function Dashboard() {
             <SidebarTrigger />
             <div className="flex-1">
               <h1 className="text-sm font-semibold md:text-base">
-                Olá, Ana <span className="ml-1">👋</span>
+                Olá, {userName} <span className="ml-1">👋</span>
               </h1>
               <p className="text-xs text-muted-foreground">Bom te ver de volta. Vamos estudar?</p>
             </div>
@@ -87,9 +115,18 @@ function Dashboard() {
               </Button>
               <Avatar className="h-9 w-9 border border-border">
                 <AvatarFallback className="bg-lavender text-lavender-foreground text-xs font-semibold">
-                  AN
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => signOut().then(() => navigate({ to: "/login" }))}
+                title="Sair da conta"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </header>
 
