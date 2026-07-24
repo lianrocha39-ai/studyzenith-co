@@ -35,8 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: (error as { message: string }).message };
     }
+
 
     if (data?.session && data?.user) {
       setSession(data.session);
