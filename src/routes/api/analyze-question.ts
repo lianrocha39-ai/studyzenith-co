@@ -29,87 +29,93 @@ export const Route = createFileRoute("/api/analyze-question")({
           });
         }
 
-        // Análise local - sem API externa
-        const analysisResult = analyzeQuestion(question, userAnswer);
+        const key = process.env.HUGGINGFACE_API_KEY;
+        if (!key) {
+          return new Response(JSON.stringify({ error: "HUGGINGFACE_API_KEY ausente. Configure no Vercel." }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
 
-        return new Response(JSON.stringify(analysisResult), {
-          headers: { "content-type": "application/json" },
-        });
+        const system = `Você é um professor especialista em concursos públicos brasileiros. Analise a questão de múltipla escolha enviada, identifique a alternativa correta (A, B, C, D ou E) e explique por que está correta. Retorne APENAS um JSON válido com os campos:
+{
+  "correct": "A letra da alternativa correta (A, B, C, D ou E)",
+  "explanation": "Explicação breve do porquê essa alternativa está correta"
+}`;
+
+        const userMsg = `Questão:\n${question}\n\nResposta escolhida pelo usuário: ${userAnswer || "(não informada)"}\n\nRetorne apenas o JSON.`;
+
+        try {
+          const res = await fetch(
+            "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf",
+            {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${key}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                inputs: `${system}\n\n${userMsg}`,
+                parameters: {
+                  max_new_tokens: 500,
+                  temperature: 0.7,
+                },
+              }),
+            }
+          );
+
+          if (!res.ok) {
+            const text = await res.text();
+            const status = res.status === 429 ? 429 : 500;
+            return new Response(
+              JSON.stringify({
+                error:
+                  res.status === 429
+                    ? "Muitas requisições. Tente novamente em instantes."
+                    : res.status === 503
+                    ? "Modelo carregando. Tente novamente em poucos segundos."
+                    : `Erro da IA: ${text}`,
+              }),
+              { status, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          const data = (await res.json()) as Array<{ generated_text?: string }>;
+          let content = data[0]?.generated_text ?? "{}";
+          
+          // Limpar a resposta - remover prompt repetido
+          if (content.includes(userMsg)) {
+            content = content.split(userMsg)[1] ?? content;
+          }
+
+          let parsed: { correct?: string; explanation?: string } = {};
+          try {
+            // Tentar extrair JSON da resposta
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              parsed = JSON.parse(jsonMatch[0]);
+            } else {
+              parsed = { explanation: content };
+            }
+          } catch {
+            parsed = { explanation: content };
+          }
+
+          const correct = (parsed.correct ?? "").trim().toUpperCase().slice(0, 1);
+          const explanation = parsed.explanation ?? "";
+          const isCorrect = !!userAnswer && !!correct && userAnswer === correct;
+
+          return new Response(
+            JSON.stringify({ correct, explanation, isCorrect, userAnswer }),
+            { headers: { "content-type": "application/json" } }
+          );
+        } catch (e) {
+          return new Response(
+            JSON.stringify({ error: (e as Error).message || "Falha na IA" }),
+            { status: 500, headers: { "content-type": "application/json" } }
+          );
+        }
       },
     },
   },
 });
-
-function analyzeQuestion(
-  question: string,
-  userAnswer: string
-): { correct: string; explanation: string; isCorrect: boolean; userAnswer: string } {
-  // Converter tudo para minúsculas para análise
-  const questionLower = question.toLowerCase();
-
-  // Dicionário de palavras-chave para cada alternativa
-  const keywords: Record<string, string[]> = {
-    A: ["primeiro", "afirmativa i", "correto", "verdadeiro", "alternativa a"],
-    B: ["segundo", "afirmativa ii", "afirmativa 1 e 2", "i e ii"],
-    C: ["terceiro", "afirmativa iii", "todas", "todas estão corretas"],
-    D: ["quarto", "somente", "nenhuma", "nenhuma das anteriores"],
-    E: ["quinto", "todas as anteriores", "todas acima"],
-  };
-
-  // Padrões comuns em questões de concurso
-  let detectedAnswer = "";
-  let confidence = 0;
-
-  // Buscar indicadores de resposta correta no texto
-  if (questionLower.includes("a resposta correta é")) {
-    const match = questionLower.match(/a resposta correta é\s*([a-e])/i);
-    if (match) {
-      detectedAnswer = match[1].toUpperCase();
-      confidence = 0.9;
-    }
-  } else if (questionLower.includes("gabarito:")) {
-    const match = questionLower.match(/gabarito:\s*([a-e])/i);
-    if (match) {
-      detectedAnswer = match[1].toUpperCase();
-      confidence = 0.9;
-    }
-  } else if (questionLower.includes("alternativa correta:")) {
-    const match = questionLower.match(/alternativa correta:\s*([a-e])/i);
-    if (match) {
-      detectedAnswer = match[1].toUpperCase();
-      confidence = 0.9;
-    }
-  }
-
-  // Se não encontrou, tenta analisar pela posição da alternativa marcada
-  if (!detectedAnswer) {
-    // Busca por padrões "A) ...", "B) ..." etc
-    const alternatives = question.match(/[A-E]\)\s*(.+?)(?=[A-E]\)|$)/gi);
-    if (alternatives && alternatives.length > 0) {
-      // Seleciona uma alternativa aleatória (simulando análise)
-      const randomIndex = Math.floor(Math.random() * alternatives.length);
-      detectedAnswer = ["A", "B", "C", "D", "E"][randomIndex];
-      confidence = 0.5;
-    } else {
-      detectedAnswer = "A";
-      confidence = 0.3;
-    }
-  }
-
-  const isCorrect = userAnswer === detectedAnswer;
-
-  // Gerar explicação baseada no resultado
-  let explanation = "";
-  if (isCorrect) {
-    explanation = `✓ Correto! Você marcou a alternativa ${userAnswer}, que é a resposta correta.`;
-  } else {
-    explanation = `✗ Você marcou ${userAnswer}, mas a resposta correta é ${detectedAnswer}. Revise o conteúdo desta questão.`;
-  }
-
-  return {
-    correct: detectedAnswer,
-    explanation,
-    isCorrect,
-    userAnswer,
-  };
-}
