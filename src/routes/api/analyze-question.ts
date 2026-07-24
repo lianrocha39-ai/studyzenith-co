@@ -55,7 +55,7 @@ export const Route = createFileRoute("/api/analyze-question")({
               "X-Title": "StudyZenith",
             },
             body: JSON.stringify({
-              model: "meta-llama/llama-2-7b-chat",
+              model: "openai/gpt-3.5-turbo",
               messages: [
                 { role: "system", content: system },
                 { role: "user", content: userMsg },
