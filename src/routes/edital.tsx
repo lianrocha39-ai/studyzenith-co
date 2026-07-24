@@ -142,17 +142,7 @@ function EditalPage() {
             <Button onClick={() => fileRef.current?.click()} className="rounded-xl" disabled={isReadingPdf}>
               <Upload className="mr-2 h-4 w-4" /> {isReadingPdf ? "Lendo PDF..." : "Escolher arquivo (PDF, TXT)"}
             </Button>
-              accept=".txt,.json,.md,text/plain"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onFile(f);
-                e.target.value = "";
-              }}
-            />
-            <Button onClick={() => fileRef.current?.click()} className="rounded-xl">
-              <Upload className="mr-2 h-4 w-4" /> Escolher arquivo
-            </Button>
+
             {total > 0 && (
               <Badge variant="secondary" className="rounded-full">
                 {total} tópicos
