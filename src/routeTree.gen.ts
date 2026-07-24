@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as QuestoesRouteImport } from './routes/questoes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EditalRouteImport } from './routes/edital'
 import { Route as CronogramaRouteImport } from './routes/cronograma'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAnalyzeQuestionRouteImport } from './routes/api/analyze-question'
 
+const QuestoesRoute = QuestoesRouteImport.update({
+  id: '/questoes',
+  path: '/questoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/cronograma': typeof CronogramaRoute
   '/edital': typeof EditalRoute
   '/login': typeof LoginRoute
+  '/questoes': typeof QuestoesRoute
   '/api/analyze-question': typeof ApiAnalyzeQuestionRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/cronograma': typeof CronogramaRoute
   '/edital': typeof EditalRoute
   '/login': typeof LoginRoute
+  '/questoes': typeof QuestoesRoute
   '/api/analyze-question': typeof ApiAnalyzeQuestionRoute
 }
 export interface FileRoutesById {
@@ -61,6 +69,7 @@ export interface FileRoutesById {
   '/cronograma': typeof CronogramaRoute
   '/edital': typeof EditalRoute
   '/login': typeof LoginRoute
+  '/questoes': typeof QuestoesRoute
   '/api/analyze-question': typeof ApiAnalyzeQuestionRoute
 }
 export interface FileRouteTypes {
@@ -70,15 +79,23 @@ export interface FileRouteTypes {
     | '/cronograma'
     | '/edital'
     | '/login'
+    | '/questoes'
     | '/api/analyze-question'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cronograma' | '/edital' | '/login' | '/api/analyze-question'
+  to:
+    | '/'
+    | '/cronograma'
+    | '/edital'
+    | '/login'
+    | '/questoes'
+    | '/api/analyze-question'
   id:
     | '__root__'
     | '/'
     | '/cronograma'
     | '/edital'
     | '/login'
+    | '/questoes'
     | '/api/analyze-question'
   fileRoutesById: FileRoutesById
 }
@@ -87,11 +104,19 @@ export interface RootRouteChildren {
   CronogramaRoute: typeof CronogramaRoute
   EditalRoute: typeof EditalRoute
   LoginRoute: typeof LoginRoute
+  QuestoesRoute: typeof QuestoesRoute
   ApiAnalyzeQuestionRoute: typeof ApiAnalyzeQuestionRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/questoes': {
+      id: '/questoes'
+      path: '/questoes'
+      fullPath: '/questoes'
+      preLoaderRoute: typeof QuestoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -135,8 +160,19 @@ const rootRouteChildren: RootRouteChildren = {
   CronogramaRoute: CronogramaRoute,
   EditalRoute: EditalRoute,
   LoginRoute: LoginRoute,
+  QuestoesRoute: QuestoesRoute,
   ApiAnalyzeQuestionRoute: ApiAnalyzeQuestionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
