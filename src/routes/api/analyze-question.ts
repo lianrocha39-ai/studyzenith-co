@@ -29,9 +29,9 @@ export const Route = createFileRoute("/api/analyze-question")({
           });
         }
 
-        const key = process.env.HUGGINGFACE_API_KEY;
+        const key = process.env.OPENROUTER_API_KEY;
         if (!key) {
-          return new Response(JSON.stringify({ error: "HUGGINGFACE_API_KEY ausente. Configure no Vercel." }), {
+          return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY ausente. Configure no Vercel." }), {
             status: 500,
             headers: { "content-type": "application/json" },
           });
@@ -46,23 +46,24 @@ export const Route = createFileRoute("/api/analyze-question")({
         const userMsg = `Questão:\n${question}\n\nResposta escolhida pelo usuário: ${userAnswer || "(não informada)"}\n\nRetorne apenas o JSON.`;
 
         try {
-          const res = await fetch(
-            "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf",
-            {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${key}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                inputs: `${system}\n\n${userMsg}`,
-                parameters: {
-                  max_new_tokens: 500,
-                  temperature: 0.7,
-                },
-              }),
-            }
-          );
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "Authorization": `Bearer ${key}`,
+              "HTTP-Referer": "https://studyzenith-co.vercel.app",
+              "X-Title": "StudyZenith",
+            },
+            body: JSON.stringify({
+              model: "meta-llama/llama-2-7b-chat",
+              messages: [
+                { role: "system", content: system },
+                { role: "user", content: userMsg },
+              ],
+              temperature: 0.7,
+              max_tokens: 500,
+            }),
+          });
 
           if (!res.ok) {
             const text = await res.text();
@@ -72,31 +73,21 @@ export const Route = createFileRoute("/api/analyze-question")({
                 error:
                   res.status === 429
                     ? "Muitas requisições. Tente novamente em instantes."
-                    : res.status === 503
-                    ? "Modelo carregando. Tente novamente em poucos segundos."
+                    : res.status === 401
+                    ? "Chave de API inválida. Verifique no Vercel."
                     : `Erro da IA: ${text}`,
               }),
               { status, headers: { "content-type": "application/json" } }
             );
           }
 
-          const data = (await res.json()) as Array<{ generated_text?: string }>;
-          let content = data[0]?.generated_text ?? "{}";
-          
-          // Limpar a resposta - remover prompt repetido
-          if (content.includes(userMsg)) {
-            content = content.split(userMsg)[1] ?? content;
-          }
-
+          const data = (await res.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+          };
+          const content = data.choices?.[0]?.message?.content ?? "{}";
           let parsed: { correct?: string; explanation?: string } = {};
           try {
-            // Tentar extrair JSON da resposta
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              parsed = JSON.parse(jsonMatch[0]);
-            } else {
-              parsed = { explanation: content };
-            }
+            parsed = JSON.parse(content);
           } catch {
             parsed = { explanation: content };
           }
