@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as QuestoesRouteImport } from './routes/questoes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EditalRouteImport } from './routes/edital'
+import { Route as DesempenhoRouteImport } from './routes/desempenho'
 import { Route as CronogramaRouteImport } from './routes/cronograma'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAnalyzeQuestionRouteImport } from './routes/api/analyze-question'
@@ -29,6 +30,11 @@ const LoginRoute = LoginRouteImport.update({
 const EditalRoute = EditalRouteImport.update({
   id: '/edital',
   path: '/edital',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesempenhoRoute = DesempenhoRouteImport.update({
+  id: '/desempenho',
+  path: '/desempenho',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CronogramaRoute = CronogramaRouteImport.update({
@@ -50,6 +56,7 @@ const ApiAnalyzeQuestionRoute = ApiAnalyzeQuestionRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cronograma': typeof CronogramaRoute
+  '/desempenho': typeof DesempenhoRoute
   '/edital': typeof EditalRoute
   '/login': typeof LoginRoute
   '/questoes': typeof QuestoesRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cronograma': typeof CronogramaRoute
+  '/desempenho': typeof DesempenhoRoute
   '/edital': typeof EditalRoute
   '/login': typeof LoginRoute
   '/questoes': typeof QuestoesRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cronograma': typeof CronogramaRoute
+  '/desempenho': typeof DesempenhoRoute
   '/edital': typeof EditalRoute
   '/login': typeof LoginRoute
   '/questoes': typeof QuestoesRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/cronograma'
+    | '/desempenho'
     | '/edital'
     | '/login'
     | '/questoes'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cronograma'
+    | '/desempenho'
     | '/edital'
     | '/login'
     | '/questoes'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/cronograma'
+    | '/desempenho'
     | '/edital'
     | '/login'
     | '/questoes'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CronogramaRoute: typeof CronogramaRoute
+  DesempenhoRoute: typeof DesempenhoRoute
   EditalRoute: typeof EditalRoute
   LoginRoute: typeof LoginRoute
   QuestoesRoute: typeof QuestoesRoute
@@ -131,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/desempenho': {
+      id: '/desempenho'
+      path: '/desempenho'
+      fullPath: '/desempenho'
+      preLoaderRoute: typeof DesempenhoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cronograma': {
       id: '/cronograma'
       path: '/cronograma'
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CronogramaRoute: CronogramaRoute,
+  DesempenhoRoute: DesempenhoRoute,
   EditalRoute: EditalRoute,
   LoginRoute: LoginRoute,
   QuestoesRoute: QuestoesRoute,
