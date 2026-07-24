@@ -29,55 +29,63 @@ export const Route = createFileRoute("/api/analyze-question")({
           });
         }
 
-        const key = process.env.LOVABLE_API_KEY;
+        const key = process.env.GOOGLE_API_KEY;
         if (!key) {
-          return new Response(JSON.stringify({ error: "LOVABLE_API_KEY ausente." }), {
+          return new Response(JSON.stringify({ error: "GOOGLE_API_KEY ausente. Configure no Vercel." }), {
             status: 500,
             headers: { "content-type": "application/json" },
           });
         }
 
-        const system = `Você é um professor especialista em concursos públicos brasileiros. Analise a questão de múltipla escolha enviada, identifique a alternativa correta (A, B, C, D ou E) e explique de forma resumida (máx 4 frases) por que ela é a correta. Responda SEMPRE em JSON válido no formato: {"correct":"A","explanation":"..."}. Sem markdown, sem texto extra.`;
+        const system = `Você é um professor especialista em concursos públicos brasileiros. Analise a questão de múltipla escolha enviada, identifique a alternativa correta (A, B, C, D ou E) e explique por que está correta. Retorne APENAS um JSON válido com os campos:
+{
+  "correct": "A letra da alternativa correta (A, B, C, D ou E)",
+  "explanation": "Explicação breve do porquê essa alternativa está correta"
+}`;
 
         const userMsg = `Questão:\n${question}\n\nResposta escolhida pelo usuário: ${userAnswer || "(não informada)"}\n\nRetorne apenas o JSON.`;
 
         try {
-          const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              Authorization: `Bearer ${key}`,
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [
-                { role: "system", content: system },
-                { role: "user", content: userMsg },
-              ],
-              response_format: { type: "json_object" },
-            }),
-          });
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+            {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: system },
+                      { text: userMsg },
+                    ],
+                  },
+                ],
+              }),
+            }
+          );
 
           if (!res.ok) {
             const text = await res.text();
-            const status = res.status === 429 || res.status === 402 ? res.status : 500;
+            const status = res.status === 429 || res.status === 403 ? res.status : 500;
             return new Response(
               JSON.stringify({
                 error:
                   res.status === 429
                     ? "Muitas requisições. Tente novamente em instantes."
-                    : res.status === 402
-                    ? "Créditos de IA esgotados. Adicione créditos no workspace."
-                    : `Erro da IA: ${text}`,
+                    : res.status === 403
+                      ? "Chave de API inválida ou expirada."
+                      : `Erro da IA: ${text}`,
               }),
-              { status, headers: { "content-type": "application/json" } },
+              { status, headers: { "content-type": "application/json" } }
             );
           }
 
           const data = (await res.json()) as {
-            choices?: Array<{ message?: { content?: string } }>;
+            candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
           };
-          const content = data.choices?.[0]?.message?.content ?? "{}";
+          const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
           let parsed: { correct?: string; explanation?: string } = {};
           try {
             parsed = JSON.parse(content);
@@ -91,12 +99,12 @@ export const Route = createFileRoute("/api/analyze-question")({
 
           return new Response(
             JSON.stringify({ correct, explanation, isCorrect, userAnswer }),
-            { headers: { "content-type": "application/json" } },
+            { headers: { "content-type": "application/json" } }
           );
         } catch (e) {
           return new Response(
             JSON.stringify({ error: (e as Error).message || "Falha na IA" }),
-            { status: 500, headers: { "content-type": "application/json" } },
+            { status: 500, headers: { "content-type": "application/json" } }
           );
         }
       },
